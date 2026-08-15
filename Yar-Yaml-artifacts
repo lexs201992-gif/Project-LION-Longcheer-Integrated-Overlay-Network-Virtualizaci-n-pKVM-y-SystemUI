@@ -1,0 +1,102 @@
+Cómo implementar estas detecciones:
+YARA:
+Úsala en pipeline de CI/CD o en herramientas de escaneo estático (como yara-mobile o escáneres de store) para analizar los APKs de SystemUI, Sidebar.apk y binarios en /vendor/bin.
+Comando: yara -r Longcheer_LION_Sidebar_Listener.yar /path/to/firmware/extracted/
+VQL (Para Rapid7/EDR):
+Importa el artefacto YAML en tu servidor de Velociraptor.
+Despliega la recolección en la flota de dispositivos gestionados (si tienes agentes en dispositivos corporativos Android Enterprise o en servidores de análisis de logs).
+
+name: Custom.Detect.Longcheer.LION.Kernel.Compromise
+description: Detecta indicadores de compromiso del kernel relacionados con Project LION (WireGuard, nd_pmem, MACsec) en dispositivos Android/Unisoc.
+author: Alex de la Cruz (lexs201992-gif)
+parameters:
+  - name: DeviceType
+    default: "Android_Unisoc_T606"
+
+queries:
+  - name: Check_Kernel_Modules_and_Drivers
+    query: |
+      SELECT 
+        Process, 
+        Module, 
+        Status,
+        "Kernel Module Compromise" as DetectionType
+      FROM proc_modules()
+      WHERE Module =~ "wireguard|nd_pmem|macsec|cdc_ncm|cdc_ether"
+
+  - name: Check_Dmesg_for_Rescue_Party_Abuse
+    query: |
+      SELECT 
+        Line,
+        "Remote Rescue Vector Detected" as DetectionType
+      FROM dmesg()
+      WHERE Line =~ "WireGuard 1.0.0 loaded|nd_pmem|namespace 0.0|macsec|tun0|tap0|qogirl6"
+
+  - name: Check_Network_Interfaces_Anomalies
+    query: |
+      SELECT 
+        Name,
+        State,
+        "Anomalous Tunnel Interface" as DetectionType
+      FROM ifconfig()
+      WHERE Name =~ "tun0|wg0" AND State =~ "UP"
+
+  - name: Check_Persistent_Memory_Namespaces
+    query: |
+      SELECT 
+        Device,
+        Namespace,
+        "Persistent Memory Abuse Detected" as DetectionType
+      FROM ndctl_list_namespaces()
+      WHERE Namespace =~ "0.0" OR Device =~ "nd_pmem"
+
+  - name: Check_Longcheer_Sidebar_Process
+    query: |
+      SELECT 
+        pid,
+        name,
+        cmdline,
+        "LION Sidebar Process Detected" as DetectionType
+      FROM pslist()
+      WHERE name =~ "com.longcheer.sidebar|com.longcheer.SarControl" 
+
+
+rule Longcheer_LION_Sidebar_Listener {
+    meta:
+        description = "Detecta el listener de ScreenState y la inicialización de red del sidebar de Longcheer (Project LION)"
+        author = "Alex de la Cruz (lexs201992-gif)"
+        date = "2026-08-15"
+        level = "critical"
+        reference = "Project LION: Longcheer Integrated Overlay Network"
+
+    strings:
+        $s1_listener_class = "Lcom/longcheer/sidebar/listener/ScreenListener;" ascii
+        $s2_receiver_class = "Lcom/longcheer/sidebar/listener/ScreenListener$ScreenBroadcastReceiver;" ascii
+        $s3_intent_screen_on = "android.intent.action.SCREEN_ON" ascii
+        $s4_intent_screen_off = "android.intent.action.SCREEN_OFF" ascii
+        $s5_intent_user_present = "android.intent.action.USER_PRESENT" ascii
+        
+        $s6_wireguard_init = "WireGuard 1.0.0 loaded" ascii
+        $s7_wg_interface = "tun0" ascii
+        $s8_wg_peer = "fd00:" ascii wide // Prefijo IPv6 común en configuraciones WG privadas
+        
+        $s9_pmem_namespace = "namespace 0.0" ascii
+        $s10_nd_pmem = "nd_pmem" ascii
+        $s11_macsec = "macsec" ascii
+        $s12_cdc_ncm = "cdc_ncm" ascii
+        
+        $s13_longcheer_fota = "fota.longcheer.com" ascii
+        $s14_longcheer_sar = "com.longcheer.SarControl" ascii
+        $s15_qogirl6 = "qogirl6" ascii // Codename de la placa base
+
+    condition:
+        // Se detecta si encuentra la clase del listener + al menos 2 indicadores de red/persistencia
+        ($s1_listener_class or $s2_receiver_class) and 
+        ($s3_intent_screen_on and $s4_intent_screen_off) and
+        (
+            ($s6_wireguard_init and $s7_wg_interface) or 
+            ($s9_pmem_namespace and $s10_nd_pmem) or 
+            ($s13_longcheer_fota) or 
+            ($s15_qogirl6)
+        )
+}   
