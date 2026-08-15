@@ -1,0 +1,53 @@
+name: Custom.Detect.Longcheer.LION.Kernel.Compromise
+description: Detecta indicadores de compromiso del kernel relacionados con Project LION (WireGuard, nd_pmem, MACsec) en dispositivos Android/Unisoc.
+author: Alex de la Cruz (lexs201992-gif)
+parameters:
+  - name: DeviceType
+    default: "Android_Unisoc_T606"
+
+queries:
+  - name: Check_Kernel_Modules_and_Drivers
+    query: |
+      SELECT 
+        Process, 
+        Module, 
+        Status,
+        "Kernel Module Compromise" as DetectionType
+      FROM proc_modules()
+      WHERE Module =~ "wireguard|nd_pmem|macsec|cdc_ncm|cdc_ether"
+
+  - name: Check_Dmesg_for_Rescue_Party_Abuse
+    query: |
+      SELECT 
+        Line,
+        "Remote Rescue Vector Detected" as DetectionType
+      FROM dmesg()
+      WHERE Line =~ "WireGuard 1.0.0 loaded|nd_pmem|namespace 0.0|macsec|tun0|tap0|qogirl6"
+
+  - name: Check_Network_Interfaces_Anomalies
+    query: |
+      SELECT 
+        Name,
+        State,
+        "Anomalous Tunnel Interface" as DetectionType
+      FROM ifconfig()
+      WHERE Name =~ "tun0|wg0" AND State =~ "UP"
+
+  - name: Check_Persistent_Memory_Namespaces
+    query: |
+      SELECT 
+        Device,
+        Namespace,
+        "Persistent Memory Abuse Detected" as DetectionType
+      FROM ndctl_list_namespaces()
+      WHERE Namespace =~ "0.0" OR Device =~ "nd_pmem"
+
+  - name: Check_Longcheer_Sidebar_Process
+    query: |
+      SELECT 
+        pid,
+        name,
+        cmdline,
+        "LION Sidebar Process Detected" as DetectionType
+      FROM pslist()
+      WHERE name =~ "com.longcheer.sidebar|com.longcheer.SarControl"   
