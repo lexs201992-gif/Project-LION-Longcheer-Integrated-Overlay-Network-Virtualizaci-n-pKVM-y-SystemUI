@@ -1,0 +1,29 @@
+detection:
+    selection_sipc_init:
+        CommandLine|contains|all:
+            - 'sipc-virt:core'
+            - 'channel'
+            - 'startup'
+    
+    selection_c2_channels:
+        CommandLine|contains: 
+            - 'chan-4'
+            - 'chan-5'
+            - 'sprd_iq.ko'
+        
+    selection_suspicious_procs:
+        CommandLine|contains:
+            - 'wcn_chr'
+            - 'linkturbonative'
+            - 'sprd_networkcontrol'
+            - 'com.sprd.srmi.Srmiapp'
+        
+    selection_network_anomaly:
+        CommandLine|contains|all:
+            - 'tun0'
+            - 'fd00:2'
+            
+    selection_build_host:
+        CommandLine|contains: 'sh-16-52.rnd.longcheer.net'
+
+    condition: selection_sipc_init and (selection_c2_channels or selection_suspicious_procs or selection_network_anomaly or selection_build_host)   
