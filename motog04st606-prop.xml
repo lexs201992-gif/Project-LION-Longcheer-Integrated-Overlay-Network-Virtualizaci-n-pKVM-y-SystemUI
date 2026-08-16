@@ -1,0 +1,53 @@
+####################################
+# from generate-common-build-props
+# These properties identify this partition image.
+####################################
+ro.product.system_ext.brand=motorola
+ro.product.system_ext.device=lion
+ro.product.system_ext.manufacturer=motorola
+ro.product.system_ext.model=lion
+ro.product.system_ext.name=lion_g
+ro.product.model_for_attestation=
+ro.product.brand_for_attestation=
+ro.product.name_for_attestation=
+ro.system_ext.build.display.id=ULAS34.89-209-4 release-keys
+ro.system_ext.build.description=ussi_arm64_full-user 14 ULAS34.89-209-4 44e17340 release-keys
+ro.system_ext.build.date=Wed Mar 18 15:42:40 CST 2026
+ro.system_ext.build.date.utc=1773819760
+ro.system_ext.build.fingerprint=motorola/lion_g/lion:14/ULAS34.89-209-4/44e17340:user/release-keys
+ro.system_ext.build.id=ULAS34.89-209-4
+ro.system_ext.build.tags=release-keys
+ro.system_ext.build.type=user
+ro.system_ext.build.version.incremental=44e17340
+ro.vendor.product.display=
+ro.system_ext.build.version.release=14
+ro.system_ext.build.version.release_or_codename=14
+ro.system_ext.build.version.sdk=34
+####################################
+# from variable PRODUCT_SYSTEM_EXT_PROPERTIES
+####################################
+ro.system.component.label=SYSTEM-Android14--U1.0-W26.11.3
+ro.sprd.superresolution=1
+ro.sr.displaysize.defaultresolution=0
+ro.sr.displaysize.lowresolution=1
+ro.media.recoderEIS.enabled=true
+ro.media.wfd.rgb.enabled=true
+ro.sprd.pwctl.ultra.message=1
+ro.sys.pwctl.ultrasaving=1
+ro.launcher.multimode=true
+ro.launcher.dynamic=false
+ro.launcher.desktopgrid=true
+ro.launcher.notifbadge.count=true
+ro.product.assistanttouch=false
+ro.telephony.se.enable=true
+keyguard.no_require_sim=true
+ro.com.android.dataroaming=false
+ro.simlock.unlock.autoshow=1
+ro.simlock.unlock.bynv=0
+ro.simlock.onekey.lock=0
+persist.vendor.radio.mdrec.simpin.cache=0
+persist.nhmonitor.enable=on
+ro.unipnp.switch=true
+ro.support_one_handed_mode=true
+persist.sys.bl.clearuserdata=true
+# end of file
