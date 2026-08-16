@@ -1,0 +1,23 @@
+**Subject:** Forensic Analysis of Modified `com.android.traceur` on Unisoc qogirl6
+**Investigator:** Alex de la Cruz (lexs201992-gif)
+**Date:** August 16, 2026
+
+The presence of **Okio**, **Perfetto**, and the injection of **`com.unisoc.settingslib`** into `com.android.traceur` confirms that this application has been transformed from a legitimate diagnostic tool into a **low-level data exfiltration agent** operating under Unisoc's infrastructure.
+
+### 1. Okio: The Data Obfuscation Engine
+*   **Technical Function:** `Okio` is a high-performance I/O library (used by OkHttp) designed for efficient byte manipulation.
+*   **Usage in the Backdoor:** In this context, it is not used for legitimate HTTP traffic but to **pack and obfuscate the payload**.
+    *   Methods such as `asUtf8ToByteArray` and `toUtf8String` suggest that `Traceur` is converting raw system traces (logs, memory dumps, hardware identifiers) into compact byte streams before transmission.
+    *   This allows exfiltrated data to appear as generic binary traffic or to be embedded within legitimate network packets, evading basic firewall inspections that look for readable text strings.
+
+### 2. Perfetto: The Hypervisor Intelligence Source
+*   **Technical Function:** `Perfetto` is Android's system-wide tracing and profiling framework. The presence of `DataSourceDescriptorOuterClass` indicates that `Traceur` is configuring specific data sources to capture kernel and userspace events.
+*   **Usage in the Backdoor:** By integrating Perfetto directly, Longcheer/Unisoc is leveraging Android's native infrastructure to **read the state of the hypervisor and the `qogirl6` modem**.
+    *   They do not need to write a custom memory reader; instead, they use Perfetto to extract data from kernel tracing buffers (where interactions between the "clean" and "dirty" VMs reside) and then use Okio to pack them. This is the legitimate use of a development tool for surveillance purposes.
+
+### 3. `com.unisoc.settingslib`: Identity Hijacking and Network Control
+*   **The Injection:** The class `UniSettingsLibComponentFactory` residing within the tracing package is proof of **bytecode modification**. A tracing app has no legitimate need to manage MAC addresses (`getMacAddressInstance`) or mobile mappings (`makeMobileMappingsMgr`).
+*   **The Purpose:**
+    *   **Unique Identification:** By calling `getMacAddressInstance`, the backdoor ensures exfiltrated data is tied to the device's unique physical identifier, even if the user attempts to spoof the MAC address at the software level.
+    *   **Modem Control:** `UniMobileMappingsMgr` allows the correlation of performance traces with the actual state of mobile networks (IMS, data), which is crucial for understanding when and how to activate the `wg0` tunnel or manage IMS "panic" states.
+    *   **Factory Persistence:** Being compiled into the system APK grants this code signature privileges that a normal app would not have, allowing access to restricted hardware configurations.
